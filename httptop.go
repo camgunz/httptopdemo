@@ -65,16 +65,15 @@ var HTTP_METHODS = map[string]bool{
 	"CONNECT": true,
 }
 
-/*
- * host, ident, auth, timestamp, request, status, bytes
- */
+// Hack to prevent select from spinning up the CPU
+const SELECT_SLEEP_MS = 35
+
+// host, ident, auth, timestamp, request, status, bytes
 var CLF_REGEXP = regexp.MustCompile(
 	`(.*)\s(.*)\s(.*)\s\[(.*)\]\s"(.*)"\s(.*)\s(.*)`,
 )
 
-/*
- * host, ident, auth, timestamp, request, status, bytes, referer, user-agent
- */
+// host, ident, auth, timestamp, request, status, bytes, referer, user-agent
 var ECLF_REGEXP = regexp.MustCompile(
 	`(.*)\s(.*)\s(.*)\s\[(.*)\]\s"(.*)"\s(.*)\s(.*)\s"(.*)"\s"(.*)"`,
 )
@@ -230,9 +229,6 @@ func WatchFile(lines chan string, watching chan bool) {
 	}
 
 	rfds := &syscall.FdSet{}
-	timeout := &syscall.Timeval{}
-	timeout.Sec = 0
-	timeout.Usec = 1000000
 
 	watching <- true
 
@@ -241,7 +237,8 @@ func WatchFile(lines chan string, watching chan bool) {
 		FD_ZERO(rfds)
 		FD_SET(rfds, WEB_SERVICE.LogFileFD)
 
-		_, err := syscall.Select(WEB_SERVICE.LogFileFD+1, rfds, nil, nil, timeout)
+		_, err := syscall.Select(WEB_SERVICE.LogFileFD+1, rfds, nil, nil, nil)
+		time.Sleep(time.Duration(SELECT_SLEEP_MS) * time.Millisecond)
 
 		if err != nil {
 			log.Fatalln(err)
@@ -387,6 +384,7 @@ func ParseLine(lines chan string, events chan Event) {
 func HandleEvents(events chan Event) error {
 	for {
 		event := <-events
+
 		section, ok := WEB_SERVICE.Sections[event.SectionName]
 
 		if ok {
@@ -601,7 +599,13 @@ func main() {
 	go WatchTraffic(trafficTicker.C)
 
 	<-watching
-	<-done
+
+	if *cpuProfileFile != "" {
+		var input string
+		fmt.Scanln(&input)
+	} else {
+		<-done
+	}
 }
 
 /* vi: set noet ts=4 sw=4: */
