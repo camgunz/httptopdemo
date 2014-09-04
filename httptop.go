@@ -131,11 +131,12 @@ func ParseResource(resource string) (string, error) {
 	return "/" + components[0], nil
 }
 
-func ParseHTTPStatus(status string) (int, error) {
+func ParseHTTPStatus(status string) (int, bool, error) {
+	isError := false
 	code, err := strconv.Atoi(status)
 
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 
 	if code != http.StatusContinue &&
@@ -179,10 +180,38 @@ func ParseHTTPStatus(status string) (int, error) {
 		code != http.StatusServiceUnavailable &&
 		code != http.StatusGatewayTimeout &&
 		code != http.StatusHTTPVersionNotSupported {
-		return 0, errors.New("Unknown HTTP status code")
+		return 0, false, errors.New("Unknown HTTP status code")
 	}
 
-	return code, nil
+	if code == http.StatusBadRequest ||
+		code == http.StatusUnauthorized ||
+		code == http.StatusPaymentRequired ||
+		code == http.StatusForbidden ||
+		code == http.StatusNotFound ||
+		code == http.StatusMethodNotAllowed ||
+		code == http.StatusNotAcceptable ||
+		code == http.StatusProxyAuthRequired ||
+		code == http.StatusRequestTimeout ||
+		code == http.StatusConflict ||
+		code == http.StatusGone ||
+		code == http.StatusLengthRequired ||
+		code == http.StatusPreconditionFailed ||
+		code == http.StatusRequestEntityTooLarge ||
+		code == http.StatusRequestURITooLong ||
+		code == http.StatusUnsupportedMediaType ||
+		code == http.StatusRequestedRangeNotSatisfiable ||
+		code == http.StatusExpectationFailed ||
+		code == http.StatusTeapot ||
+		code == http.StatusInternalServerError ||
+		code == http.StatusNotImplemented ||
+		code == http.StatusBadGateway ||
+		code == http.StatusServiceUnavailable ||
+		code == http.StatusGatewayTimeout ||
+		code == http.StatusHTTPVersionNotSupported {
+		isError = true
+	}
+
+	return code, isError, nil
 }
 
 func WatchFile(lines chan string, watching chan bool) {
@@ -257,6 +286,7 @@ func WatchFile(lines chan string, watching chan bool) {
 func ParseLine(lines chan string, events chan Event) {
 	for {
 		var components []string
+		var isError bool
 		referer := ""
 		userAgent := ""
 		isExtended := false
@@ -308,7 +338,7 @@ func ParseLine(lines chan string, events chan Event) {
 			continue
 		}
 
-		status, err := ParseHTTPStatus(components[6])
+		status, isError, err := ParseHTTPStatus(components[6])
 
 		if err != nil {
 			log.Printf("Invalid status [%s] (%s)\n",
@@ -344,7 +374,7 @@ func ParseLine(lines chan string, events chan Event) {
 			status,
 			referer,
 			userAgent,
-			status != 200,
+			isError,
 		}
 
 	}
