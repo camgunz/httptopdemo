@@ -44,8 +44,10 @@ type WebService struct {
 	ErrorLogFilePath string
 	ErrorLogFile     *os.File
 	BusiestSection   *Section
-	HitLimit         int
 	HitCount         int
+	BytesTransferred int
+	ErrorCount       int
+	HitLimit         int
 	HighTraffic      bool
 	LimitCrossed     time.Time
 	Sections         map[string]*Section
@@ -376,6 +378,10 @@ func HandleEvents(events chan Event) error {
 		}
 
 		WEB_SERVICE.HitCount++
+		WEB_SERVICE.BytesTransferred += event.Bytes
+		if event.IsError {
+			WEB_SERVICE.ErrorCount++
+		}
 	}
 }
 
@@ -386,11 +392,23 @@ func PrintPeriodicStats(ticker <-chan time.Time) {
 		if WEB_SERVICE.BusiestSection == nil {
 			fmt.Printf("[%s] No activity\n", currentTime.Format(time.RFC1123))
 		} else {
-			fmt.Printf("[%s]: Top Section: %s (%d)\n",
+			fmt.Printf("[%s]: Transferred: %d KB | Errors: %d | Top Section: %s (%d)\n",
 				currentTime.Format(time.RFC1123),
+				WEB_SERVICE.BytesTransferred/1024,
+				WEB_SERVICE.ErrorCount,
 				WEB_SERVICE.BusiestSection.Name,
 				WEB_SERVICE.BusiestSection.HitCount,
 			)
+		}
+
+		WEB_SERVICE.BusiestSection = nil
+		WEB_SERVICE.BytesTransferred = 0
+		WEB_SERVICE.ErrorCount = 0
+
+		for _, section := range WEB_SERVICE.Sections {
+			section.HitCount = 0
+			section.BytesTransferred = 0
+			section.ErrorCount = 0
 		}
 	}
 }
@@ -459,8 +477,10 @@ func SetWebService(logFilePath, errorLogFilePath string, hitLimit int) error {
 		errorLogFilePath,
 		errorLogFile,
 		nil,
-		hitLimit,
 		0,
+		0,
+		0,
+		hitLimit,
 		false,
 		time.Time{},
 		map[string]*Section{},

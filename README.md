@@ -33,6 +33,8 @@ Change them appropriately.  I know, suboptimal :(
     multiple logs
   - Use fsnotify and avoid the syscall package
   - Use a bona-fide console library instead of just dumping to console
+  - Add the info ticker's duration to the web service listener so it could do
+    per-second stats
 
 ## Design Improvements
 
