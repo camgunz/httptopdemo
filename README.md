@@ -5,6 +5,7 @@ Log Format) and periodically prints statistics.
 
 ## Usage
 
+  - `-cpuprofile=""`: Profile CPU usage, save to this file
   - `-file="access.log"`: Name of the log file to watch
   - `-help=false`: Print usage information
   - `-log=""`: File to log errors to
