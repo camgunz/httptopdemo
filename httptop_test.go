@@ -119,7 +119,7 @@ func TestWatchTraffic(t *testing.T) {
 	infoTicker := time.NewTicker(time.Duration(2) * time.Second)
 	trafficTicker := time.NewTicker(time.Duration(5) * time.Second)
 
-	err := SetWebService(DUMMY_ACCESS_LOG_PATH, "httptop.log", 24)
+	err := SetWebService(DUMMY_ACCESS_LOG_PATH, "", 24)
 
 	if err != nil {
 		log.Fatalf("Error creating web service listener: %s\n", err)

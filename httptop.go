@@ -422,6 +422,8 @@ func WatchTraffic(ticker <-chan time.Time) {
 }
 
 func SetWebService(logFilePath, errorLogFilePath string, hitLimit int) error {
+	var errorLogFile *os.File = nil
+
 	if WEB_SERVICE != nil {
 		return errors.New("Can only create a web service once")
 	}
@@ -434,16 +436,20 @@ func SetWebService(logFilePath, errorLogFilePath string, hitLimit int) error {
 
 	logFile := os.NewFile(uintptr(logFileFD), logFilePath)
 
-	errorLogFile, err := os.OpenFile(
-		errorLogFilePath,
-		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
-		0660,
-	)
-
-	if err != nil {
-		return fmt.Errorf("Error opening error log file %s: %s\n",
-			errorLogFilePath, err,
+	if len(errorLogFilePath) > 0 {
+		errorLogFile, err = os.OpenFile(
+			errorLogFilePath,
+			os.O_WRONLY|os.O_APPEND|os.O_CREATE,
+			0660,
 		)
+
+		if err != nil {
+			return fmt.Errorf("Error opening error log file %s: %s\n",
+				errorLogFilePath, err,
+			)
+		}
+
+		log.SetOutput(errorLogFile)
 	}
 
 	WEB_SERVICE = &WebService{
@@ -460,8 +466,6 @@ func SetWebService(logFilePath, errorLogFilePath string, hitLimit int) error {
 		map[string]*Section{},
 	}
 
-	log.SetOutput(WEB_SERVICE.ErrorLogFile)
-
 	return nil
 }
 
@@ -477,7 +481,7 @@ func main() {
 		"file", "access.log", "Name of the log file to watch",
 	)
 	var errorLogFilePath = flag.String(
-		"log", "httptop.log", "File to log errors to",
+		"log", "", "File to log errors to",
 	)
 	var hitLimit = flag.Int(
 		"trigger", 20, "Number of hits that constitutes high traffic",
