@@ -531,6 +531,7 @@ func main() {
 	go PrintPeriodicStats(infoTicker.C)
 	go WatchTraffic(trafficTicker.C)
 
+	<-watching
 	<-done
 }
 
