@@ -1,0 +1,15 @@
+## Implementation Improvements
+
+  - Design an interface and avoid globals.
+  - Don't presume a single log file; Go would make it easy to multiplex
+    multiple logs
+  - Use fsnotify and avoid the syscall package
+  - Use a bona-fide console library instead of just dumping to console
+
+## Design Improvements
+
+  - I know httptop is a little contrived because it's just an assignment, but
+    I tried to implement the spec so that it could be extended beyond just
+    printing out events to the console.  Sending SMS alerts, pushing events to
+    a database, updating graph
+
