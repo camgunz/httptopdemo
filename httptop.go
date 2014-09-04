@@ -272,7 +272,6 @@ func WatchFile(lines chan string, watching chan bool) {
 
 					buf.Reset()
 					if len(line) > 0 {
-						log.Printf("Writing string [%s]\n", line)
 						buf.WriteString(line)
 					}
 					break
@@ -577,8 +576,8 @@ func main() {
 	}
 
 	done := make(chan bool)
-	lines := make(chan string)
-	events := make(chan Event)
+	lines := make(chan string, 1024)
+	events := make(chan Event, 1024)
 	watching := make(chan bool)
 	infoTicker := time.NewTicker(*displayRate)
 	trafficTicker := time.NewTicker(*highTrafficWindowSize)

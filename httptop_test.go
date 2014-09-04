@@ -113,8 +113,8 @@ func TestParseTimestamp(t *testing.T) {
 }
 
 func TestWatchTraffic(t *testing.T) {
-	lines := make(chan string)
-	events := make(chan Event)
+	lines := make(chan string, 1024)
+	events := make(chan Event, 1024)
 	watching := make(chan bool)
 	infoTicker := time.NewTicker(time.Duration(2) * time.Second)
 	trafficTicker := time.NewTicker(time.Duration(5) * time.Second)
