@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"syscall"
@@ -229,6 +230,9 @@ func WatchFile(lines chan string, watching chan bool) {
 	}
 
 	rfds := &syscall.FdSet{}
+	timeout := &syscall.Timeval{}
+	timeout.Sec = 0
+	timeout.Usec = 1000000
 
 	watching <- true
 
@@ -237,7 +241,7 @@ func WatchFile(lines chan string, watching chan bool) {
 		FD_ZERO(rfds)
 		FD_SET(rfds, WEB_SERVICE.LogFileFD)
 
-		_, err := syscall.Select(WEB_SERVICE.LogFileFD+1, rfds, nil, nil, nil)
+		_, err := syscall.Select(WEB_SERVICE.LogFileFD+1, rfds, nil, nil, timeout)
 
 		if err != nil {
 			log.Fatalln(err)
@@ -551,6 +555,11 @@ func main() {
 		false,
 		"Print usage information",
 	)
+	var cpuProfileFile = flag.String(
+		"cpuprofile",
+		"",
+		"Profile CPU usage, save to this file",
+	)
 
 	flag.Parse()
 
@@ -559,9 +568,19 @@ func main() {
 		os.Exit(0)
 	}
 
+	if *cpuProfileFile != "" {
+		f, err := os.Create(*cpuProfileFile)
+
+		if err != nil {
+			log.Fatalf("Error opening CPU profiling file: %s\n", err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	done := make(chan bool)
-	lines := make(chan string, 1024)
-	events := make(chan Event, 1024)
+	lines := make(chan string)
+	events := make(chan Event)
 	watching := make(chan bool)
 	infoTicker := time.NewTicker(*displayRate)
 	trafficTicker := time.NewTicker(*highTrafficWindowSize)
